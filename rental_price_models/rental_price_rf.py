@@ -1,8 +1,9 @@
 from sklearn.ensemble import RandomForestRegressor
-from sklearn.preprocessing import LabelEncoder, OneHotEncoder
+from sklearn.preprocessing import LabelEncoder, OneHotEncoder, KBinsDiscretizer
 from sklearn.compose import ColumnTransformer
 from sklearn.pipeline import Pipeline
-from sklearn.model_selection import train_test_split
+from sklearn.model_selection import train_test_split, GridSearchCV
+
 import dash_table
 from training_and_test_data import jaap_data
 import pandas as pd
@@ -34,16 +35,35 @@ def fit_rf_rental_prices():
 
     X_train, X_test, y_train, y_test = train_test_split(X, y, random_state = 555)
 
-    dummy_transformer = ColumnTransformer([('cat', OneHotEncoder(dtype='int'), RF_INDEPENDENT_VARS_STRING ) ], remainder='passthrough')
+    preprocessor = ColumnTransformer([('cat', OneHotEncoder(dtype='int', handle_unknown='ignore'), RF_INDEPENDENT_VARS_STRING ),
+                                      ('discr', KBinsDiscretizer(encode='onehot', strategy='uniform'), ['bouwjaar', 'median_income', 'middelbare_school', 'supermarkt'])
+                                      ], remainder='passthrough')
 
-    rf_object = Pipeline(steps=[('preprocessor', dummy_transformer),
-                                ('regression', RandomForestRegressor(random_state=555, n_estimators = 100, oob_score = True))
+    rf_regression = RandomForestRegressor(random_state=555, oob_score = True)
+
+    grid_search_CV_param_grid = {   'preprocessor__discr__n_bins': [3, 5, 10, 20],
+                                    'rf_regression__max_features': ['sqrt'],
+                                    'rf_regression__n_estimators': [200]
+                                 }
+
+    rf_pipeline = Pipeline(steps=[
+                                    ('preprocessor', preprocessor),
+                                    ('rf_regression', rf_regression)
                                 ])
-    rf_object.fit(X_train, y_train )
-    rf_object.score(X_test, y_test)
-    rf_object.column_names_training_data_ = X_train.columns
 
-    pickle.dump(rf_object, open( "Models/rf_rental_prices.pkl", "wb" ) )
+    grid_search_CV_random_forest = GridSearchCV(estimator = rf_pipeline, param_grid = grid_search_CV_param_grid, cv = 3, n_jobs = -1, verbose = 2)
+
+    grid_search_CV_random_forest.fit(X_train, y_train )
+    grid_search_CV_random_forest.score(X_test, y_test)
+
+    pd.concat([pd.DataFrame(grid_search_CV_random_forest.cv_results_["params"]),
+               pd.DataFrame(grid_search_CV_random_forest.cv_results_["mean_test_score"], columns=["Accuracy"])], axis=1)
+
+
+    best_estimator = grid_search_CV_random_forest.best_estimator_
+    best_estimator.column_names_training_data_ = X_train.columns
+
+    pickle.dump(best_estimator, open( "Models/rf_rental_prices.pkl", "wb" ) )
 
     return True
 
