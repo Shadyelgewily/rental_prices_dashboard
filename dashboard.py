@@ -11,6 +11,8 @@ import dash
 import dash_core_components as dcc
 import dash_html_components as html
 from dash.dependencies import Input, Output, State
+from sklearn.model_selection import ShuffleSplit
+
 from extract_features import features_from_description
 from extract_features import features_from_zipcode
 from rental_price_models import rental_price_rf
@@ -26,7 +28,7 @@ rf_model_rental_prices = pickle.load( open( "Models/rf_rental_prices.pkl", "rb" 
 app = dash.Dash(__name__, external_stylesheets=external_stylesheets)
 
 # load pickle of random forest model
-
+ShuffleSplit()
 
 list_of_woningtypes = ['Appartement', 'Benedenwoning', 'benedenwoning + bovenwoning',
                        'Boerderij', 'Bovenwoning', 'Dubbele bovenwoning', 'Eengezinswoning',

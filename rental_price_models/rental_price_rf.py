@@ -3,6 +3,7 @@ from sklearn.preprocessing import LabelEncoder, OneHotEncoder, KBinsDiscretizer
 from sklearn.compose import ColumnTransformer
 from sklearn.pipeline import Pipeline
 from sklearn.model_selection import train_test_split, GridSearchCV
+from sklearn.model_selection import cross_val_score
 
 import dash_table
 from training_and_test_data import jaap_data
@@ -39,17 +40,19 @@ def fit_rf_rental_prices():
                                       ('discr', KBinsDiscretizer(encode='onehot', strategy='uniform'), ['bouwjaar', 'median_income', 'middelbare_school', 'supermarkt'])
                                       ], remainder='passthrough')
 
-    rf_regression = RandomForestRegressor(random_state=555, oob_score = True)
+    rf_regression = RandomForestRegressor(random_state=555, oob_score = True, n_estimators = 200)
 
     grid_search_CV_param_grid = {   'preprocessor__discr__n_bins': [3, 5, 10, 20],
                                     'rf_regression__max_features': ['sqrt'],
-                                    'rf_regression__n_estimators': [200]
+                                    'rf_regression__n_estimators': [500]
                                  }
 
     rf_pipeline = Pipeline(steps=[
                                     ('preprocessor', preprocessor),
                                     ('rf_regression', rf_regression)
                                 ])
+    #Quite some variation in the CV scores, so this can indicate that more data leads to more stable results (or n_trees => 500)
+    cv_scores =  cross_val_score(rf_pipeline, X_train, y_train, cv = 5, n_jobs = -1)
 
     grid_search_CV_random_forest = GridSearchCV(estimator = rf_pipeline, param_grid = grid_search_CV_param_grid, cv = 3, n_jobs = -1, verbose = 2)
 
