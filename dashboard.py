@@ -7,10 +7,12 @@
 #Todo: feature achterom
 #Todo: als je iets kopieert in de omschrijving eerst weer alle waarden resetten
 #Todo: monument ja/nee
+#Todo: Geen tuin is soms hoger dan wel een tuin
 import dash
 import dash_core_components as dcc
 import dash_html_components as html
 from dash.dependencies import Input, Output, State
+import dash_bootstrap_components as dbc
 from sklearn.model_selection import ShuffleSplit
 
 from extract_features import features_from_description
@@ -20,15 +22,10 @@ from rental_price_models import rental_price_rf
 import pandas as pd
 import pickle
 
-external_stylesheets = ['https://codepen.io/chriddyp/pen/bWLwgP.css']
+external_stylesheets = ['https://codepen.io/chriddyp/pen/bWLwgP.css', dbc.themes.BOOTSTRAP]
 
 zipcode_features_df =  pd.read_pickle("Data/CBS/zipcode_features.pkl")
 rf_model_rental_prices = pickle.load( open( "Models/rf_rental_prices.pkl", "rb" ) )
-
-app = dash.Dash(__name__, external_stylesheets=external_stylesheets)
-
-# load pickle of random forest model
-ShuffleSplit()
 
 list_of_woningtypes = ['Appartement', 'Benedenwoning', 'benedenwoning + bovenwoning',
                        'Boerderij', 'Bovenwoning', 'Dubbele bovenwoning', 'Eengezinswoning',
@@ -37,7 +34,10 @@ list_of_woningtypes = ['Appartement', 'Benedenwoning', 'benedenwoning + bovenwon
                        'Penthouse', 'Serviceflat', 'Studio', 'Tussenwoning',
                        'Twee onder kap', 'Villa', 'Vrijstaande woning', 'Woning',
                        'Woon-/winkelpand', 'Woonboerderij', 'Woonboot']
-app.layout = html.Div([
+
+
+app = dash.Dash(__name__, external_stylesheets=external_stylesheets)
+app.layout = dbc.Container([
     html.H6("Huurprijsindicatie"),
     html.Div(["Postcode: ", dcc.Input(id='zipcode_number', placeholder='1234', style={'width': 60} ),
                            dcc.Input(id='zipcode_letters', placeholder='AB', style={'width': 40 } ),
@@ -172,6 +172,18 @@ def update_dakterras_value(long_description):
         return 'Nee'
 
 @app.callback(
+    Output(component_id='garage', component_property='value'),
+    [Input(component_id='long_description', component_property='value')]
+)
+def update_garage_value(long_description):
+    bool_result = features_from_description.extract_garage_feature_from_long_description(long_description)
+    if(bool_result == True):
+        return 'Ja'
+    else:
+        return 'Nee'
+
+
+@app.callback(
     Output(component_id='municipality', component_property='children'),
     [Input(component_id='zipcode_number', component_property='value'), Input(component_id='zipcode_letters', component_property='value')]
 )
@@ -221,9 +233,10 @@ def on_click_huurprijsindicatie(n_button_clicks, aantal_slaapkamers, aantal_kame
                       'bouwjaar': int(construction_year), 'plaats': municipality.lower(),
                       'median_income': int(income), 'tuin': has_tuin,
                       'balkon': balkon, 'garage': garage, 'berging': berging,
-                      'treinstation': 500, 'middelbare_school': 500, 'supermarkt': 200, 'basisschool': 500}
+                      'treinstation': 6000, 'middelbare_school': 700, 'supermarkt': 130, 'basisschool': 800}
 
     return rental_price_rf.predict_rental_price(rf_model_rental_prices, features_list)
 
 if __name__ == '__main__':
+    app.title = 'Huurprijs Indicator'
     app.run_server(host='0.0.0.0', debug=True)

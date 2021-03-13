@@ -30,6 +30,13 @@ def extract_dakterras_feature_from_long_description(long_description):
     long_description_contains_feature = bool(re.search(regex_pattern, long_description.lower()))
     return long_description_contains_feature
 
+def extract_garage_feature_from_long_description(long_description):
+    search_for_strings = [ 'garage', 'parkeerplaats' ]
+    regex_pattern = "(" + "|".join(search_for_strings) + ")"
+
+    long_description_contains_feature = bool(re.search(regex_pattern, long_description.lower()))
+    return long_description_contains_feature
+
 def extract_aantal_tuinen_feature_from_long_description(long_description):
     #voortuin EN achtertuin or tweede tuin or twee tuinen
     regex_pattern_two_gardens = "(?=.*voortuin)(?=.*achtertuin)|(tweede tuin|tuinen)"
