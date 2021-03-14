@@ -22,7 +22,7 @@ from rental_price_models import rental_price_rf
 import pandas as pd
 import pickle
 
-external_stylesheets = ['https://codepen.io/chriddyp/pen/bWLwgP.css', dbc.themes.BOOTSTRAP]
+external_stylesheets = [dbc.themes.LUX]
 
 zipcode_features_df =  pd.read_pickle("Data/CBS/zipcode_features.pkl")
 rf_model_rental_prices = pickle.load( open( "Models/rf_rental_prices.pkl", "rb" ) )
@@ -35,99 +35,145 @@ list_of_woningtypes = ['Appartement', 'Benedenwoning', 'benedenwoning + bovenwon
                        'Twee onder kap', 'Villa', 'Vrijstaande woning', 'Woning',
                        'Woon-/winkelpand', 'Woonboerderij', 'Woonboot']
 
+#Todo: ook gemiddelde prijs berekenen per gemeente
+#Todo: Met 80, 90, 95% zekerheid confidence intervals gebaseerd op quantiles van average error
+#Todo: multiple callbacks
+#Todo: checken of perceeloppervlakte niet de m2 verpest
 
 app = dash.Dash(__name__, external_stylesheets=external_stylesheets)
-app.layout = dbc.Container([
-    html.H6("Huurprijsindicatie"),
-    html.Div(["Postcode: ", dcc.Input(id='zipcode_number', placeholder='1234', style={'width': 60} ),
-                           dcc.Input(id='zipcode_letters', placeholder='AB', style={'width': 40 } ),
-             html.Span( id='municipality', children=' Nederland')]
-             ),
-    html.Div([dcc.Textarea(id='long_description', value='', placeholder='Kopieer hier de woningomschrijving',
-                           style={'width': 600, 'height': 300})]),
-    html.Br(),
-    html.Div(['Woningtype: ',
-              dcc.Dropdown( id='woningtype',
-                            options=[{'label': woningtype, 'value': woningtype} for woningtype in list_of_woningtypes],
-                            value='Apartement',
-                            style={'width': 280, 'display': 'inline-block', 'vertical-align': 'middle'}
-             )]),
-    html.Div(['Woonoppervlakte: ',
-              dcc.Input(id='living_space_m2', value='', style={'width': 60 } ),
-              ' m2']),
-    html.Div(['Bouwjaar: ',
-             dcc.Dropdown( id='construction_year',
-                           options=[{'label': construction_year, 'value': construction_year} for construction_year in list(range(1900, 2020))],
-                           value='1980',
-                           style={'width': 100, 'display': 'inline-block', 'vertical-align': 'middle'}
-             )]),
-    html.Div(['Aantal kamers: ',
-              dcc.Input( id ='aantal_kamers', value='', style={'width': 40 }  )
-             ]),
-    html.Div(['Aantal slaapkamers: ',
-              dcc.Input(id='aantal_slaapkamers', value='', style={'width': 40 } )
-              ]),
-    html.Div(['Berging: ',
-            dcc.Dropdown( id='berging',
-                       options=[
-                           {'label': 'Ja', 'value': 'Ja'},
-                           {'label': 'Nee', 'value': 'Nee'}
-                       ],
-                       value='Nee',
-                       style={'width': 100, 'display': 'inline-block', 'vertical-align': 'middle'}
-             )]),
-    html.Div(['Balkon: ',
-              dcc.Dropdown(id='balkon',
-                           options=[
-                               {'label': 'Ja', 'value': 'Ja'},
-                               {'label': 'Nee', 'value': 'Nee'}
-                           ],
-                           value='Nee',
-                           style={'width': 100, 'display': 'inline-block', 'vertical-align': 'middle'}
-                           )]),
-    html.Div(['Garage: ',
-              dcc.Dropdown(id='garage',
-                           options=[
-                               {'label': 'Ja', 'value': 'Ja'},
-                               {'label': 'Nee', 'value': 'Nee'}
-                           ],
-                           value='Nee',
-                           style={'width': 100, 'display': 'inline-block', 'vertical-align': 'middle'}
-                           )]),
-    html.Div(['Tweede badkamer: ',
-              dcc.Dropdown(id='tweede_badkamer',
-                        options=[
-                            {'label': 'Ja', 'value': 'Ja'},
-                            {'label': 'Nee', 'value': 'Nee'}
-                        ],
-                        value='Nee',
-                        style={'width': 100, 'display': 'inline-block', 'vertical-align': 'middle'}
-            )]),
-    html.Div(['Aantal tuinen: ',
+
+omschrijving_card = dbc.Card([
+    dbc.FormGroup(
+                [
+                    dbc.Label("Omschrijving van de woning"),
+                    dcc.Textarea(id='long_description', value='',
+                                 placeholder='Kopieer de omschrijving van de woning (van bijvoorbeeld Pararius). '
+                                             'De meeste eigenschappen van de woning worden automatisch afgelezen uit de tekst en aan de rechterkant voor je ingevuld.',
+                                 style={'width': 600, 'height': 300}),
+                ]
+            ),
+    dbc.FormGroup(
+        [dbc.Row(
+            [dbc.Col(html.Div(dbc.Button("Bereken", color="primary", id="predict_rental_price", className="mr-1"),
+                              style={'textAlign': 'center'}))]
+        ),
+        dbc.Row([html.Span(id='rental_price_prediction', children='<Hier komt de huurprijsindicatie>')])]
+    )],
+    body=True
+)
+
+eigenschappen_card = dbc.Card([
+    dbc.FormGroup([
+        dbc.Label("Postcode: "),
+        dcc.Input(id='zipcode_number', placeholder='1234', style={'width': 60} ),
+        dcc.Input(id='zipcode_letters', placeholder='AB', style={'width': 40 } ),
+        html.Span( id='municipality', children=' Nederland')
+    ]),
+    dbc.FormGroup([
+            dbc.Label("Type woning"),
+            dcc.Dropdown(id='woningtype',
+                          options=[{'label': woningtype, 'value': woningtype} for woningtype in list_of_woningtypes],
+                          placeholder='Selecteer...')
+        ]),
+    dbc.FormGroup([
+        dbc.Label("Bouwjaar: "),
+        dcc.Dropdown(id='construction_year',
+                     options=[{'label': construction_year, 'value': construction_year} for construction_year in
+                              list(range(1900, 2020))],
+                     placeholder='Selecteer...',
+                     style={'width': 150, 'display': 'inline-block', 'vertical-align': 'middle'})
+    ]),
+    dbc.FormGroup([
+        dbc.Label("Woonoppervlakte: "),
+        dcc.Input(id='living_space_m2', value='', style={'width': 40}),' m2'
+    ]),
+    dbc.FormGroup([
+        dbc.Label("Aantal kamers: "),
+        dcc.Input(id ='aantal_kamers', value='', style={'width': 40 })
+     ]),
+    dbc.FormGroup([
+        dbc.Label("Waarvan slaapkamers: "),
+        dcc.Input(id='aantal_slaapkamers', value='', style={'width': 40})
+    ]),
+    dbc.FormGroup([dbc.Label("Berging of schuur: "),
+        dcc.Dropdown(id='berging',
+                   options=[
+                       {'label': 'Nee', 'value': 'Nee'},
+                       {'label': 'Ja', 'value': 'Ja'}
+                   ],
+                   placeholder='Selecteer...',
+                   style={'width': 150, 'display': 'inline-block', 'verticalAlign': 'middle'})
+    ]),
+    dbc.FormGroup([dbc.Label("Balkon: "),
+       dcc.Dropdown(id='balkon',
+                    options=[
+                        {'label': 'Nee', 'value': 'Nee'},
+                        {'label': 'Ja', 'value': 'Ja'}
+                    ],
+                    placeholder='Selecteer...',
+                    style={'width': 150, 'display': 'inline-block', 'verticalAlign': 'middle'})
+       ]),
+    dbc.FormGroup([dbc.Label("Garage of parkeerplaats: "),
+                   dcc.Dropdown(id='garage',
+                                options=[
+                                    {'label': 'Nee', 'value': 'Nee'},
+                                    {'label': 'Ja', 'value': 'Ja'}
+                                ],
+                                placeholder='Selecteer...',
+                                style={'width': 150, 'display': 'inline-block', 'verticalAlign': 'middle'})
+                   ]),
+    dbc.FormGroup([dbc.Label("Tweede toilet of badkamer: "),
+                   dcc.Dropdown(id='tweede_badkamer',
+                                options=[
+                                    {'label': 'Nee', 'value': 'Nee'},
+                                    {'label': 'Ja', 'value': 'Ja'}
+                                ],
+                                placeholder='Selecteer...',
+                                style={'width': 150, 'display': 'inline-block', 'verticalAlign': 'middle'})
+                   ]),
+    dbc.FormGroup([dbc.Label("Aantal tuinen: "),
               dcc.Dropdown(
                   id='aantal_tuinen',
-                   options=[
-                       {'label': '0', 'value': '0'},
-                       {'label': '1', 'value': '1'},
-                       {'label': '2', 'value': '2'}
-                   ],
-                   value = '0',
-                  style={'width': 100, 'display': 'inline-block', 'vertical-align': 'middle'}
+                  options=[
+                      {'label': '0', 'value': '0'},
+                      {'label': '1', 'value': '1'},
+                      {'label': '2', 'value': '2'}
+                  ],
+                  value='0',
+                  placeholder='Selecteer...',
+                  style={'width': 150, 'display': 'inline-block', 'vertical-align': 'middle'}
               )]),
-    html.Div(['Dakterras: ',
-              dcc.Dropdown(id='dakterras',
-                           options=[
-                               {'label': 'Ja', 'value': 'Ja'},
-                               {'label': 'Nee', 'value': 'Nee'}
-                           ],
-                           value='Nee',
-                           style={'width': 100, 'display': 'inline-block', 'vertical-align': 'middle'}
-            )]),
-    html.Div([html.Button('Huurprijsindicatie',
-                          id='predict_rental_price',
-                          style={'background-color': '#267356', 'color': '#FFF'})]),
-    html.Br(),
-    html.Span(id ='rental_price_prediction', children='<Hier komt de huurprijsindicatie>')
+    dbc.FormGroup([dbc.Label("(Dak)terras: "),
+                   dcc.Dropdown(id='dakterras',
+                                options=[
+                                    {'label': 'Nee', 'value': 'Nee'},
+                                    {'label': 'Ja', 'value': 'Ja'}
+                                ],
+                                placeholder='Selecteer...',
+                                style={'width': 150, 'display': 'inline-block', 'verticalAlign': 'middle'})
+                   ]),
+],
+
+    body=True
+)
+
+app.layout = dbc.Container([
+    html.Div(
+    [
+        dbc.Row(dbc.Col(html.Div(html.H1('Huurprijs Indicator'), style={'textAlign': 'center'}))),
+        dbc.Row(dbc.Col(html.Div([html.P("Met deze app kun je op een razendsnelle manier checken wat de geschatte huurprijs is van een woning. "
+                                        "De voorgestelde huurprijs is gebaseerd op een AI model die een voorspelling maakt aan de hand van historische prijzen van vergelijkbare woningen."),
+                                 html.P(["Kopieer de omschrijving van de woning, check of alle velden aan de rechterkant goed zijn ingevuld en klik op 'Bereken'.",
+                                        html.Br(),html.Br(),
+                                        dcc.Markdown("*Let op: Aan de voorgestelde huurprijzen kunnen geen rechten worden ontleend.*")])
+                                 ]))),
+        dbc.Row(
+            [
+                dbc.Col(omschrijving_card),
+                dbc.Col(eigenschappen_card),
+            ]
+        ),
+    ])
 ])
 
 @app.callback(
@@ -140,6 +186,60 @@ def update_berging_value(long_description):
         return 'Ja'
     else:
         return 'Nee'
+
+@app.callback(
+    Output(component_id='zipcode_number', component_property='value'),
+    [Input(component_id='long_description', component_property='value')]
+)
+def update_zipcode_number_value(long_description):
+    return features_from_description.extract_zipcode_feature_from_long_description(long_description)[0]
+
+@app.callback(
+    Output(component_id='zipcode_letters', component_property='value'),
+    [Input(component_id='long_description', component_property='value')]
+)
+def update_zipcode_number_value(long_description):
+    return features_from_description.extract_zipcode_feature_from_long_description(long_description)[1]
+
+@app.callback(
+    Output(component_id='living_space_m2', component_property='value'),
+    [Input(component_id='long_description', component_property='value')]
+)
+def update_woonoppervlakte_value(long_description):
+    return features_from_description.extract_woonoppervlakte_from_long_description(long_description)
+
+@app.callback(
+    Output(component_id='aantal_slaapkamers', component_property='value'),
+    [Input(component_id='long_description', component_property='value')]
+)
+def update_slaapkamers_value(long_description):
+    return features_from_description.extract_slaapkamers_from_long_description(long_description)
+
+@app.callback(
+    Output(component_id='aantal_kamers', component_property='value'),
+    [Input(component_id='long_description', component_property='value')]
+)
+def update_kamers_value(long_description):
+    return features_from_description.extract_kamers_from_long_description(long_description)
+
+@app.callback(
+    Output(component_id='construction_year', component_property='value'),
+    [Input(component_id='long_description', component_property='value')]
+)
+def update_bouwjaar_value(long_description):
+    return features_from_description.extract_bouwjaar_from_long_description(long_description)
+
+@app.callback(
+    Output(component_id='balkon', component_property='value'),
+    [Input(component_id='long_description', component_property='value')]
+)
+def update_balkon_value(long_description):
+    bool_result = features_from_description.extract_balkon_feature_from_long_description(long_description)
+    if (bool_result == True):
+        return 'Ja'
+    else:
+        return 'Nee'
+
 
 @app.callback(
     Output(component_id='tweede_badkamer', component_property='value'),
@@ -198,7 +298,7 @@ def update_zipcode_info(zipcode_number, zipcode_letters):
     municipality = features_from_zipcode.zipcode_to_municipality(zipcode, zipcode_features_df)
     income = features_from_zipcode.zipcode_to_income(zipcode, zipcode_features_df)
 
-    return municipality + " (gem. besteedbare inkomen in postcode is " + str(income) + ")"
+    return municipality
 
 @app.callback(Output('rental_price_prediction', 'children'), [Input('predict_rental_price', 'n_clicks')],
               [State('aantal_slaapkamers', 'value'),
@@ -217,7 +317,7 @@ def on_click_huurprijsindicatie(n_button_clicks, aantal_slaapkamers, aantal_kame
                                 construction_year, zipcode_number, zipcode_letters, aantal_tuinen,
                                 balkon, garage, berging):
     if n_button_clicks is None:
-        return '<Hier komt de huurprijsindicatie>'
+        return ''
 
     zipcode = ( str(zipcode_number) + str(zipcode_letters) ).upper()
     municipality = features_from_zipcode.zipcode_to_municipality(zipcode, zipcode_features_df)
