@@ -42,6 +42,7 @@ list_of_woningtypes = ['Appartement', 'Benedenwoning', 'benedenwoning + bovenwon
 #Todo: checken of perceeloppervlakte niet de m2 verpest
 
 app = dash.Dash(__name__, external_stylesheets=external_stylesheets)
+app.title = 'Huurprijs Indicator'
 server = app.server
 
 navbar = dbc.NavbarSimple(
@@ -375,5 +376,4 @@ def on_click_huurprijsindicatie(n_button_clicks, aantal_slaapkamers, aantal_kame
     return rental_price_rf.predict_rental_price(rf_model_rental_prices, features_list)
 
 if __name__ == '__main__':
-    app.title = 'Huurprijs Indicator'
     app.run_server(host='0.0.0.0', debug=True)
