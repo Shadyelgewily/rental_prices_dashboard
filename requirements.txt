@@ -1,24 +1,32 @@
 appdirs==1.4.4
+Brotli==1.0.9
 brotlipy==0.7.0
-certifi==2020.6.20
+certifi==2020.12.5
 cffi==1.14.0
 click==7.1.2
-dash==1.4.1
-dash-core-components==1.3.1
-dash-html-components==1.0.1
-dash-renderer==1.1.2
-dash-table==4.4.1
-distlib==0.3.0
+cycler==0.10.0
+dash==1.19.0
+dash-bootstrap-components==0.11.3
+dash-core-components==1.15.0
+dash-html-components==1.1.2
+dash-renderer==1.9.0
+dash-table==4.11.2
 Flask==1.1.2
 Flask-Compress==1.5.0
 future==0.18.2
 itsdangerous==1.1.0
 Jinja2==2.11.2
 joblib==0.16.0
+kiwisolver @ file:///D:/bld/kiwisolver_1610099949969/work
 MarkupSafe==1.1.1
-numpy==1.19.0
+matplotlib @ file:///D:/bld/matplotlib-suite_1611858873832/work
+numpy @ file:///D:/bld/numpy_1612953208180/work
+olefile @ file:///home/conda/feedstock_root/build_artifacts/olefile_1602866521163/work
 pandas==1.0.5
+Pillow @ file:///D:/bld/pillow_1615244129446/work
+plotly @ file:///tmp/build/80754af9/plotly_1593522991827/work
 pycparser==2.20
+pyparsing==2.4.7
 python-dateutil==2.8.1
 pytz==2020.1
 PyYAML==5.3.1
@@ -28,6 +36,7 @@ scipy==1.5.1
 six==1.15.0
 sklearn==0.0
 threadpoolctl==2.1.0
+tornado @ file:///D:/bld/tornado_1610094878337/work
 virtualenv-clone==0.5.4
 Werkzeug==1.0.1
 wincertstore==0.2
