@@ -1,2 +1,2 @@
-web: gunicorn dashboard:app --log-file=-
+web: gunicorn dashboard:app.server --log-file=-
 
