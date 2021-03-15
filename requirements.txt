@@ -18,14 +18,14 @@ gunicorn==20.0.4
 itsdangerous==1.1.0
 Jinja2==2.11.2
 joblib==0.16.0
-kiwisolver @ file:///D:/bld/kiwisolver_1610099949969/work
+kiwisolver
 MarkupSafe==1.1.1
-matplotlib @ file:///D:/bld/matplotlib-suite_1611858873832/work
-numpy @ file:///D:/bld/numpy_1612953208180/work
-olefile @ file:///home/conda/feedstock_root/build_artifacts/olefile_1602866521163/work
+matplotlib
+numpy
+olefile
 pandas==1.0.5
-Pillow @ file:///D:/bld/pillow_1615244129446/work
-plotly @ file:///tmp/build/80754af9/plotly_1593522991827/work
+Pillow
+plotly
 pycparser==2.20
 pyparsing==2.4.7
 python-dateutil==2.8.1
@@ -37,7 +37,7 @@ scipy==1.5.1
 six==1.15.0
 sklearn==0.0
 threadpoolctl==2.1.0
-tornado @ file:///D:/bld/tornado_1610094878337/work
+tornado
 virtualenv-clone==0.5.4
 Werkzeug==1.0.1
 wincertstore==0.2
