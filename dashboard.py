@@ -24,6 +24,7 @@ import pickle
 
 external_stylesheets = [dbc.themes.LUX]
 
+#Todo: impute missing values with median income
 zipcode_features_df =  pd.read_pickle("Data/CBS/zipcode_features.pkl")
 rf_model_rental_prices = pickle.load( open( "Models/rf_rental_prices.pkl", "rb" ) )
 
@@ -32,7 +33,7 @@ list_of_woningtypes = ['Appartement', 'Benedenwoning', 'benedenwoning + bovenwon
                        'Eenvoudige woning', 'Geschakelde woning', 'Grachtenpand',
                        'Herenhuis', 'Hoekwoning', 'Kamer', 'Landhuis', 'Maisonette',
                        'Penthouse', 'Serviceflat', 'Studio', 'Tussenwoning',
-                       'Twee onder kap', 'Villa', 'Vrijstaande woning', 'Woning',
+                       'Twee onder kap', 'Villa', 'Vrijstaande woning',
                        'Woon-/winkelpand', 'Woonboerderij', 'Woonboot']
 
 #Todo: ook gemiddelde prijs berekenen per gemeente
@@ -42,10 +43,30 @@ list_of_woningtypes = ['Appartement', 'Benedenwoning', 'benedenwoning + bovenwon
 
 app = dash.Dash(__name__, external_stylesheets=external_stylesheets)
 
+navbar = dbc.NavbarSimple(
+    children=[
+        dbc.NavItem(dbc.NavLink("Page 1", href="#")),
+        dbc.DropdownMenu(
+            children=[
+                dbc.DropdownMenuItem("More pages", header=True),
+                dbc.DropdownMenuItem("Page 2", href="#"),
+                dbc.DropdownMenuItem("Page 3", href="#"),
+            ],
+            nav=True,
+            in_navbar=True,
+            label="More",
+        ),
+    ],
+    brand="Point Forecast Consultancy",
+    brand_href="http://www.pointforecastconsultancy.nl",
+    color="info",
+    dark=True,
+)
+
 omschrijving_card = dbc.Card([
     dbc.FormGroup(
                 [
-                    dbc.Label("Omschrijving van de woning"),
+                    dbc.Label("Omschrijving van de woning", style={'font-weight': 'bold'}),
                     dcc.Textarea(id='long_description', value='',
                                  placeholder='Kopieer de omschrijving van de woning (van bijvoorbeeld Pararius). '
                                              'De meeste eigenschappen van de woning worden automatisch afgelezen uit de tekst en aan de rechterkant voor je ingevuld.',
@@ -57,45 +78,50 @@ omschrijving_card = dbc.Card([
             [dbc.Col(html.Div(dbc.Button("Bereken", color="primary", id="predict_rental_price", className="mr-1"),
                               style={'textAlign': 'center'}))]
         ),
-        dbc.Row([html.Span(id='rental_price_prediction', children='<Hier komt de huurprijsindicatie>')])]
+        dbc.Row([html.Br(), html.Br()]),
+        dbc.Row(
+            dbc.Col(
+                html.Div([html.H4(id='rental_price_prediction', className='text-info')], style={'textAlign': 'center'})
+            )
+        )]
     )],
     body=True
 )
 
 eigenschappen_card = dbc.Card([
     dbc.FormGroup([
-        dbc.Label("Postcode: "),
+        dbc.Label("Postcode: ", style={'font-weight': 'bold'}),
         dcc.Input(id='zipcode_number', placeholder='1234', style={'width': 60} ),
         dcc.Input(id='zipcode_letters', placeholder='AB', style={'width': 40 } ),
         html.Span( id='municipality', children=' Nederland')
     ]),
     dbc.FormGroup([
-            dbc.Label("Type woning"),
+            dbc.Label("Type woning", style={'font-weight': 'bold'}),
             dcc.Dropdown(id='woningtype',
                           options=[{'label': woningtype, 'value': woningtype} for woningtype in list_of_woningtypes],
                           placeholder='Selecteer...')
         ]),
     dbc.FormGroup([
-        dbc.Label("Bouwjaar: "),
+        dbc.Label("Bouwjaar: ", style={'font-weight': 'bold'}),
         dcc.Dropdown(id='construction_year',
                      options=[{'label': construction_year, 'value': construction_year} for construction_year in
-                              list(range(1900, 2020))],
+                              list(range(1860, 2020))],
                      placeholder='Selecteer...',
                      style={'width': 150, 'display': 'inline-block', 'vertical-align': 'middle'})
     ]),
     dbc.FormGroup([
-        dbc.Label("Woonoppervlakte: "),
+        dbc.Label("Woonoppervlakte: ", style={'font-weight': 'bold'}),
         dcc.Input(id='living_space_m2', value='', style={'width': 40}),' m2'
     ]),
     dbc.FormGroup([
-        dbc.Label("Aantal kamers: "),
+        dbc.Label("Aantal kamers: ", style={'font-weight': 'bold'}),
         dcc.Input(id ='aantal_kamers', value='', style={'width': 40 })
      ]),
     dbc.FormGroup([
-        dbc.Label("Waarvan slaapkamers: "),
+        dbc.Label("Waarvan slaapkamers: ", style={'font-weight': 'bold'}),
         dcc.Input(id='aantal_slaapkamers', value='', style={'width': 40})
     ]),
-    dbc.FormGroup([dbc.Label("Berging of schuur: "),
+    dbc.FormGroup([dbc.Label("Berging of schuur: ", style={'font-weight': 'bold'}),
         dcc.Dropdown(id='berging',
                    options=[
                        {'label': 'Nee', 'value': 'Nee'},
@@ -104,7 +130,7 @@ eigenschappen_card = dbc.Card([
                    placeholder='Selecteer...',
                    style={'width': 150, 'display': 'inline-block', 'verticalAlign': 'middle'})
     ]),
-    dbc.FormGroup([dbc.Label("Balkon: "),
+    dbc.FormGroup([dbc.Label("Balkon: ", style={'font-weight': 'bold'}),
        dcc.Dropdown(id='balkon',
                     options=[
                         {'label': 'Nee', 'value': 'Nee'},
@@ -113,7 +139,7 @@ eigenschappen_card = dbc.Card([
                     placeholder='Selecteer...',
                     style={'width': 150, 'display': 'inline-block', 'verticalAlign': 'middle'})
        ]),
-    dbc.FormGroup([dbc.Label("Garage of parkeerplaats: "),
+    dbc.FormGroup([dbc.Label("Garage of parkeerplaats: ", style={'font-weight': 'bold'}),
                    dcc.Dropdown(id='garage',
                                 options=[
                                     {'label': 'Nee', 'value': 'Nee'},
@@ -122,7 +148,7 @@ eigenschappen_card = dbc.Card([
                                 placeholder='Selecteer...',
                                 style={'width': 150, 'display': 'inline-block', 'verticalAlign': 'middle'})
                    ]),
-    dbc.FormGroup([dbc.Label("Tweede toilet of badkamer: "),
+    dbc.FormGroup([dbc.Label("Tweede toilet of badkamer: ", style={'font-weight': 'bold'}),
                    dcc.Dropdown(id='tweede_badkamer',
                                 options=[
                                     {'label': 'Nee', 'value': 'Nee'},
@@ -131,7 +157,7 @@ eigenschappen_card = dbc.Card([
                                 placeholder='Selecteer...',
                                 style={'width': 150, 'display': 'inline-block', 'verticalAlign': 'middle'})
                    ]),
-    dbc.FormGroup([dbc.Label("Aantal tuinen: "),
+    dbc.FormGroup([dbc.Label("Aantal tuinen: ", style={'font-weight': 'bold'}),
               dcc.Dropdown(
                   id='aantal_tuinen',
                   options=[
@@ -143,7 +169,7 @@ eigenschappen_card = dbc.Card([
                   placeholder='Selecteer...',
                   style={'width': 150, 'display': 'inline-block', 'vertical-align': 'middle'}
               )]),
-    dbc.FormGroup([dbc.Label("(Dak)terras: "),
+    dbc.FormGroup([dbc.Label("(Dak)terras: ", style={'font-weight': 'bold'}),
                    dcc.Dropdown(id='dakterras',
                                 options=[
                                     {'label': 'Nee', 'value': 'Nee'},
@@ -157,9 +183,12 @@ eigenschappen_card = dbc.Card([
     body=True
 )
 
-app.layout = dbc.Container([
+app.layout = html.Div([
+    html.Div(navbar),
+    dbc.Container([
     html.Div(
     [
+        dbc.Row(html.Br()),
         dbc.Row(dbc.Col(html.Div(html.H1('Huurprijs Indicator'), style={'textAlign': 'center'}))),
         dbc.Row(dbc.Col(html.Div([html.P("Met deze app kun je op een razendsnelle manier checken wat de geschatte huurprijs is van een woning. "
                                         "De voorgestelde huurprijs is gebaseerd op een AI model die een voorspelling maakt aan de hand van historische prijzen van vergelijkbare woningen."),
@@ -175,6 +204,13 @@ app.layout = dbc.Container([
         ),
     ])
 ])
+])
+@app.callback(
+    Output(component_id='woningtype', component_property='value'),
+    [Input(component_id='long_description', component_property='value')]
+)
+def update_berging_value(long_description):
+    return features_from_description.extract_woning_type_from_long_description(long_description, list_of_woningtypes)
 
 @app.callback(
     Output(component_id='berging', component_property='value'),

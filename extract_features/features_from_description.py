@@ -2,6 +2,18 @@
 
 import re
 
+#Todo: special case for inexact matches (capitalized matches for example)
+def extract_woning_type_from_long_description(long_description, list_of_woningtypes):
+    woningtype_regex_string = "|".join(list_of_woningtypes)
+    #followed by the woningtype followed by a space, dot or comma. Otherwise you will frequently get "kamer" because that is the first occurence in the long description
+    regex_pattern = "(" + woningtype_regex_string + ")[,\s\.]\s*"
+    matches = re.findall(regex_pattern, long_description, re.IGNORECASE)
+
+    if(len(matches) > 0):
+        return matches[0].capitalize()
+    else:
+        return ""
+
 def extract_zipcode_feature_from_long_description(long_description):
     regex_pattern = "[1-9][0-9]{3} ?(?!sa|sd|ss)[a-z]{2} "
     matches = re.findall(regex_pattern, long_description, re.IGNORECASE)
@@ -64,7 +76,7 @@ def extract_balkon_feature_from_long_description(long_description):
     return long_description_contains_feature
 
 def extract_tweede_badkamer_feature_from_long_description(long_description):
-    search_for_strings = [ 'badkamers', 'tweede badkamer']
+    search_for_strings = [ 'badkamers', 'tweede badkamer', '2e toilet', '2e badkamer']
     regex_pattern = "(" + "|".join(search_for_strings) + ")"
 
     long_description_contains_feature = bool(re.search(regex_pattern, long_description.lower()))
