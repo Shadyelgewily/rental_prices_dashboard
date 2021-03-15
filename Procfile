@@ -1,2 +1,1 @@
-web: gunicorn dashboard:app.server --log-file=-
-
+web: gunicorn dashboard:server --log-file=- --preload
