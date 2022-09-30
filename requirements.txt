@@ -17,7 +17,7 @@ future==0.18.2
 gunicorn==20.0.4
 itsdangerous==1.1.0
 Jinja2==2.11.2
-joblib==0.16.0
+joblib==1.2.0
 kiwisolver
 MarkupSafe==1.1.1
 matplotlib
